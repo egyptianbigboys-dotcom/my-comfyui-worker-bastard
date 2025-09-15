@@ -1,9 +1,10 @@
 {
   "tests": [
     {
-      "name": "validation_test",
+      "name": "validation_text_input",
       "input": {
-        "prompt": "Hello world test"
+        "text": "Hello world",
+        "language": "en"
       },
       "timeout": 10000
     }
