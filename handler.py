@@ -3,7 +3,7 @@ import json
 import os
 
 # Path to workflow JSON
-WORKFLOW_PATH = os.path.join(os.path.dirname(__file__), "Flux_Ace++_FaceSwap_DatingAPPsDaddy-Patreon_v4.json")
+WORKFLOW_PATH = os.path.join(os.path.dirname(__file__), "DatingAPPsDaddy.json")
 
 # Load workflow once at startup
 try:
@@ -32,3 +32,4 @@ def handler(job):
 
 # Start the serverless worker
 runpod.serverless.start({"handler": handler})
+
