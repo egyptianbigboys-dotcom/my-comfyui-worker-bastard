@@ -13,7 +13,7 @@ RUN pip3 install --upgrade pip
 RUN pip3 install runpod
 
 # Copy workflow JSON into container
-COPY Flux_Ace++_FaceSwap_DatingAPPsDaddy-Patreon_v4.json /app/
+COPY DatingAPPsDaddy.json /app/
 
 # Download models into correct folders
 RUN mkdir -p /app/models/unet /app/models/loras /app/models/vae
@@ -39,3 +39,4 @@ COPY handler.py /app/
 
 # Run handler on container start
 CMD ["python3", "handler.py"]
+
