@@ -20,7 +20,7 @@ RUN mkdir -p /app/models/unet /app/models/loras /app/models/vae
 
 # Unet
 RUN wget -O /app/models/unet/unet.safetensors \
-  "https://civitai.com/api/download/models/1085456?type=Model&format=SafeTensor&size=full&fp=fp8"
+  "https://huggingface.co/jackzheng/flux-fill-FP8/resolve/main/fluxFillFP8_v10.safetensors?download=true"
 
 # Loras (HuggingFace)
 RUN wget -O /app/models/loras/portrait_lora64.safetensors \
@@ -28,7 +28,7 @@ RUN wget -O /app/models/loras/portrait_lora64.safetensors \
 
 # Loras (Civitai)
 RUN wget -O /app/models/loras/loras_extra.safetensors \
-  "https://civitai.com/api/download/models/981081?type=Model&format=SafeTensor"
+  "https://huggingface.co/Muapi/flux.1-turbo-alpha/resolve/main/flux.1-turbo-alpha.safetensors?download=true"
 
 # VAE
 RUN wget -O /app/models/vae/vae.safetensors \
@@ -39,5 +39,6 @@ COPY handler.py /app/
 
 # Run handler on container start
 CMD ["python3", "handler.py"]
+
 
 
