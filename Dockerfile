@@ -32,11 +32,12 @@ RUN wget -O /app/models/loras/loras_extra.safetensors \
 
 # VAE
 RUN wget -O /app/models/vae/vae.safetensors \
-  "https://huggingface.co/lovis93/testllm/resolve/main/ae.safetensors"
+  "https://huggingface.co/lovis93/testllm/resolve/ed9cf1af7465cebca4649157f118e331cf2a084f/ae.safetensors?download=true"
 
 # Copy handler
 COPY handler.py /app/
 
 # Run handler on container start
 CMD ["python3", "handler.py"]
+
 
