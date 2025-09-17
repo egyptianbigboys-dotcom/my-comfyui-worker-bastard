@@ -1,42 +1,39 @@
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+# --------------------------
+# ComfyUI RunPod Serverless
+# --------------------------
 
+# 1) Base image with CUDA + Python (match RunPod GPU environment)
+FROM runpod/pytorch:3.10-2.0.1-118
+
+# 2) Environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
-    COMFY_DIR=/workspace/ComfyUI \
-    DATA_DIR=/runpod-volume \
-    HF_HOME=/workspace/.cache/huggingface
+    PIP_NO_CACHE_DIR=1 \
+    WORKSPACE=/workspace
 
-# --- System deps ---
+WORKDIR $WORKSPACE
+
+# 3) Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git wget curl ca-certificates python3 python3-pip python3-venv \
-    ffmpeg libgl1 libglib2.0-0 \
- && rm -rf /var/lib/apt/lists/*
+    git wget curl zip \
+    && rm -rf /var/lib/apt/lists/*
 
-# --- Python deps (base) ---
-COPY requirements.txt /tmp/requirements.txt
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+# 4) Install ComfyUI
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git ComfyUI
 
-# --- Get ComfyUI ---
-RUN mkdir -p /workspace && \
-    git clone --depth=1 https://github.com/comfyanonymous/ComfyUI ${COMFY_DIR}
+# 5) Install Python requirements
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install -r ComfyUI/requirements.txt \
+    && pip install runpod
 
-# --- Add our repo content ---
-WORKDIR /workspace
-COPY comfyui/extra_model_paths.yaml /workspace/comfyui/extra_model_paths.yaml
-COPY comfyui/workflows/APIAutoFaceACE.json ${COMFY_DIR}/workflows/APIAutoFaceACE.json
+# 6) Copy repo files into container
+COPY . $WORKSPACE
 
-COPY custom_nodes.txt /workspace/custom_nodes.txt
-COPY models_manifest.json /workspace/models_manifest.json
+# Ensure scripts are executable
+RUN chmod +x $WORKSPACE/*.sh
 
-COPY scripts/ /workspace/scripts/
-RUN chmod +x /workspace/scripts/first_boot.sh
-
-# --- Your handler + start script ---
-COPY handler.py /workspace/handler.py
-COPY start.sh /workspace/start.sh
-RUN chmod +x /workspace/start.sh
-
-# --- Expose ComfyUI port (internal) ---
+# 7) Expose ComfyUI port
 EXPOSE 8188
 
-CMD ["/workspace/start.sh"]
+# 8) Entrypoint
+CMD ["bash", "start.sh"]
