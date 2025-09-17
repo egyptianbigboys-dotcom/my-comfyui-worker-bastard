@@ -2,10 +2,9 @@
 # ComfyUI RunPod Serverless
 # --------------------------
 
-# 1) Base image with CUDA + Python (official RunPod image, stable)
-FROM runpod/pytorch:3.10-2.0.1-cuda11.8
+# Valid, existing RunPod base image (CUDA 12.1, Python 3.10, Torch 2.1.1)
+FROM runpod/pytorch:2.1.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 
-# 2) Environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -13,27 +12,27 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 WORKDIR $WORKSPACE
 
-# 3) Install system dependencies
+# System deps (git/curl/wget/zip + common libs many nodes need)
 RUN apt-get update && apt-get install -y \
     git wget curl zip ffmpeg libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# 4) Install ComfyUI
+# ComfyUI
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git ComfyUI
 
-# 5) Install Python requirements
+# Python deps (pin requests to avoid surprises)
 RUN pip install --upgrade pip setuptools wheel \
-    && pip install -r ComfyUI/requirements.txt \
-    && pip install runpod requests==2.32.3
+ && pip install -r ComfyUI/requirements.txt \
+ && pip install runpod requests==2.32.3
 
-# 6) Copy repo files into container
+# Your repo files -> /workspace
 COPY . $WORKSPACE
 
 # Ensure scripts are executable
-RUN chmod +x $WORKSPACE/*.sh
+RUN chmod +x $WORKSPACE/*.sh || true
 
-# 7) Expose ComfyUI port (optional, useful for debugging)
+# ComfyUI port (optional for debugging)
 EXPOSE 8188
 
-# 8) Entrypoint
+# Start sequence
 CMD ["bash", "start.sh"]
