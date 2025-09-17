@@ -1,21 +1,66 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Create model folders if they don’t exist
-mkdir -p models/unet
-mkdir -p models/loras
-mkdir -p models/vae
+# -------------------------
+# download_models.sh
+# Populate models for ACE++ workflow
+# Run at container start inside RunPod Serverless
+# -------------------------
 
-echo "Downloading models..."
+MODEL_ROOT="/runpod-volume/models"
+CURL_OPTS="-L --fail --retry 5 --retry-delay 2 --create-dirs"
 
+echo "[download_models] START"
+echo "[download_models] MODEL_ROOT = ${MODEL_ROOT}"
+
+# Ensure all required folders exist
+mkdir -p \
+  "${MODEL_ROOT}/unet" \
+  "${MODEL_ROOT}/loras" \
+  "${MODEL_ROOT}/vae" \
+  "${MODEL_ROOT}/checkpoints" \
+  "${MODEL_ROOT}/diffusion_models" \
+  "${MODEL_ROOT}/controlnet" \
+  "${MODEL_ROOT}/clip" \
+  "${MODEL_ROOT}/clip_vision" \
+  "${MODEL_ROOT}/embeddings" \
+  "${MODEL_ROOT}/upscale_models"
+
+download() {
+  local url="$1"
+  local dest="$2"
+  if [ -f "$dest" ]; then
+    echo "[skip] $dest already exists"
+  else
+    echo "[download] $url -> $dest"
+    curl $CURL_OPTS -o "$dest" "$url"
+    echo "[done] $dest"
+  fi
+}
+
+# -------------------------
 # UNet (Diffusion Model)
-wget -O models/unet/flux_fill_fp8.safetensors "https://civitai.com/api/download/models/1085456?type=Model&format=SafeTensor&size=full&fp=fp8"
+# -------------------------
+download \
+  "https://huggingface.co/jackzheng/flux-fill-FP8/resolve/main/fluxFillFP8_v10.safetensors" \
+  "${MODEL_ROOT}/unet/flux_fill_fp8.safetensors"
 
+# -------------------------
 # Loras
-wget -O models/loras/comfyui_portrait_lora64.safetensors "https://huggingface.co/ali-vilab/ACE_Plus/resolve/main/portrait/comfyui_portrait_lora64.safetensors?download=true"
-wget -O models/loras/flux_turbo_alpha.safetensors "https://civitai.com/api/download/models/981081?type=Model&format=SafeTensor"
+# -------------------------
+download \
+  "https://huggingface.co/ali-vilab/ACE_Plus/resolve/main/portrait/comfyui_portrait_lora64.safetensors" \
+  "${MODEL_ROOT}/loras/comfyui_portrait_lora64.safetensors"
 
+download \
+  "https://huggingface.co/camenduru/FLUX.1-dev/resolve/fc63f3204a12362f98c04bc4c981a06eb9123eee/FLUX.1-Turbo-Alpha.safetensors" \
+  "${MODEL_ROOT}/loras/flux_turbo_alpha.safetensors"
+
+# -------------------------
 # VAE
-wget -O models/vae/ae.safetensors "https://huggingface.co/lovis93/testllm/resolve/main/ae.safetensors"
+# -------------------------
+download \
+  "https://huggingface.co/lovis93/testllm/resolve/main/ae.safetensors" \
+  "${MODEL_ROOT}/vae/ae.safetensors"
 
-echo "✅ All models downloaded successfully!"
+echo "[download_models] ✅ All models ensured"
