@@ -8,8 +8,18 @@ COMFY_DIR="/workspace/ComfyUI"
 MODEL_DOWNLOADER="/workspace/download_models.sh"
 CUSTOM_NODE_INSTALLER="/workspace/install_custom_nodes.py"
 HANDLER="/workspace/handler.py"
+EXTRA_YAML_SRC="/workspace/comfyui/extra_model_paths.yaml"
+EXTRA_YAML_DST="${COMFY_DIR}/extra_model_paths.yaml"
 
 echo "[start] worker starting at $(date)"
+
+# 0) Ensure ComfyUI knows about /runpod-volume/models via extra_model_paths.yaml
+if [ -f "${EXTRA_YAML_SRC}" ]; then
+  echo "[start] syncing extra_model_paths.yaml into ComfyUI..."
+  cp -f "${EXTRA_YAML_SRC}" "${EXTRA_YAML_DST}" || echo "[warn] failed to copy extra_model_paths.yaml"
+else
+  echo "[warn] comfyui/extra_model_paths.yaml not found — ComfyUI may not see /runpod-volume/models"
+fi
 
 # 1) Run model downloader
 if [ -x "${MODEL_DOWNLOADER}" ]; then
@@ -19,7 +29,7 @@ else
   echo "[warn] no download_models.sh found"
 fi
 
-# 2) Install custom nodes (future step)
+# 2) Install custom nodes (optional)
 if [ -f "${CUSTOM_NODE_INSTALLER}" ]; then
   echo "[start] installing custom nodes ..."
   python3 "${CUSTOM_NODE_INSTALLER}" || { echo "[error] install_custom_nodes.py failed"; exit 1; }
