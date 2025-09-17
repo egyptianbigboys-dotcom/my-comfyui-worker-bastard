@@ -1,44 +1,42 @@
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
-# Set working directory
-WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    COMFY_DIR=/workspace/ComfyUI \
+    DATA_DIR=/runpod-volume \
+    HF_HOME=/workspace/.cache/huggingface
 
-# Install system dependencies
+# --- System deps ---
 RUN apt-get update && apt-get install -y \
-    python3 python3-pip wget git curl \
-    && rm -rf /var/lib/apt/lists/*
+    git wget curl ca-certificates python3 python3-pip python3-venv \
+    ffmpeg libgl1 libglib2.0-0 \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip3 install --upgrade pip
-RUN pip3 install runpod
+# --- Python deps (base) ---
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy workflow JSON into container
-COPY DatingAPPsDaddy.json /app/
+# --- Get ComfyUI ---
+RUN mkdir -p /workspace && \
+    git clone --depth=1 https://github.com/comfyanonymous/ComfyUI ${COMFY_DIR}
 
-# Download models into correct folders
-RUN mkdir -p /app/models/unet /app/models/loras /app/models/vae
+# --- Add our repo content ---
+WORKDIR /workspace
+COPY comfyui/extra_model_paths.yaml /workspace/comfyui/extra_model_paths.yaml
+COPY comfyui/workflows/APIAutoFaceACE.json ${COMFY_DIR}/workflows/APIAutoFaceACE.json
 
-# Unet
-RUN wget -O /app/models/unet/unet.safetensors \
-  "https://huggingface.co/jackzheng/flux-fill-FP8/resolve/main/fluxFillFP8_v10.safetensors?download=true"
+COPY custom_nodes.txt /workspace/custom_nodes.txt
+COPY models_manifest.json /workspace/models_manifest.json
 
-# Loras (HuggingFace)
-RUN wget -O /app/models/loras/portrait_lora64.safetensors \
-  "https://huggingface.co/ali-vilab/ACE_Plus/resolve/main/portrait/comfyui_portrait_lora64.safetensors?download=true"
+COPY scripts/ /workspace/scripts/
+RUN chmod +x /workspace/scripts/first_boot.sh
 
-# Loras (Civitai)
-RUN wget -O /app/models/loras/loras_extra.safetensors \
-  "https://huggingface.co/Muapi/flux.1-turbo-alpha/resolve/main/flux.1-turbo-alpha.safetensors?download=true"
+# --- Your handler + start script ---
+COPY handler.py /workspace/handler.py
+COPY start.sh /workspace/start.sh
+RUN chmod +x /workspace/start.sh
 
-# VAE
-RUN wget -O /app/models/vae/vae.safetensors \
-  "https://huggingface.co/lovis93/testllm/resolve/ed9cf1af7465cebca4649157f118e331cf2a084f/ae.safetensors?download=true"
+# --- Expose ComfyUI port (internal) ---
+EXPOSE 8188
 
-# Copy handler
-COPY handler.py /app/
-
-# Run handler on container start
-CMD ["python3", "handler.py"]
-
-
-
+CMD ["/workspace/start.sh"]
