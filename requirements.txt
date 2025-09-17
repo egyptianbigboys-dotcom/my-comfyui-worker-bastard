@@ -1,1 +1,9 @@
-runpod 
+runpod
+requests
+fastapi
+uvicorn
+pydantic
+Pillow
+numpy
+opencv-python-headless
+tqdm
